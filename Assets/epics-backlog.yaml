@@ -1,0 +1,185 @@
+# AT Ornaments — structured backlog
+# Import-friendly YAML mirror of EPICS_USER_STORIES.md (e.g. for Jira/Linear/GitHub Projects CSV conversion)
+
+project: AT Ornaments E-Commerce
+prd_version: "2.0"
+epics:
+  - id: EPIC-1
+    name: Product Catalog
+    stories:
+      - id: CAT-1
+        title: Browse products by category
+        size: M
+      - id: CAT-2
+        title: Filter Shop page by category and price
+        size: M
+      - id: CAT-3
+        title: Hover/tap image swap on product cards
+        size: S
+      - id: CAT-4
+        title: Weight-based silver pricing using today's rate
+        size: M
+      - id: CAT-5
+        title: Size selector for rings/anklets
+        size: M
+      - id: CAT-6
+        title: Hallmark/HUID field + PDP badge
+        size: S
+
+  - id: EPIC-2
+    name: Cart & Checkout
+    stories:
+      - id: CART-1
+        title: Slide-in cart drawer
+        size: M
+      - id: CART-2
+        title: Free-gift progress bar in cart
+        size: S
+      - id: CART-3
+        title: Checkout address form (saved + guest)
+        size: M
+      - id: CART-4
+        title: Server-side recomputed order total
+        size: M
+      - id: CART-5
+        title: Free shipping on all orders
+        size: S
+
+  - id: EPIC-3
+    name: Free Surprise Gift
+    stories:
+      - id: GIFT-1
+        title: Admin gift pool CRUD
+        size: S
+      - id: GIFT-2
+        title: Admin-configurable gift threshold
+        size: S
+      - id: GIFT-3
+        title: Random gift assignment + snapshot on order
+        size: M
+
+  - id: EPIC-4
+    name: Payments (Razorpay)
+    stories:
+      - id: PAY-1
+        title: Razorpay Standard Checkout integration
+        size: M
+      - id: PAY-2
+        title: Webhook signature verification
+        size: M
+      - id: PAY-3
+        title: Idempotent webhook handling
+        size: S
+
+  - id: EPIC-5
+    name: Shipping (Shiprocket)
+    stories:
+      - id: SHIP-1
+        title: Auto-create shipment on paid status
+        size: M
+      - id: SHIP-2
+        title: Order tracking page
+        size: M
+      - id: SHIP-3
+        title: Delivery estimate display (5-7 days)
+        size: S
+
+  - id: EPIC-6
+    name: Hallmark & Certification
+    stories:
+      - id: HALL-1
+        title: BIS Hallmark badge on silver PDPs
+        size: S
+      - id: HALL-2
+        title: Brand-level "Trusted Since 2006" trust strip
+        size: S
+
+  - id: EPIC-7
+    name: GST Invoicing
+    stories:
+      - id: INV-1
+        title: Auto-generate sequential GST invoice on payment success
+        size: L
+      - id: INV-2
+        title: CGST+SGST vs IGST tax split logic
+        size: M
+      - id: INV-3
+        title: Invoice download (confirmation page + order history)
+        size: S
+      - id: INV-4
+        title: Admin GSTIN/business settings management
+        size: S
+
+  - id: EPIC-8
+    name: Accounts
+    stories:
+      - id: ACC-1
+        title: Supabase Auth signup/login (email + Google)
+        size: M
+      - id: ACC-2
+        title: Saved addresses with default
+        size: M
+      - id: ACC-3
+        title: Order history + invoice re-download
+        size: S
+      - id: ACC-4
+        title: Wishlist
+        size: S
+
+  - id: EPIC-9
+    name: Admin Dashboard
+    stories:
+      - id: ADM-1
+        title: Full product CRUD
+        size: L
+      - id: ADM-2
+        title: Silver rate control
+        size: S
+      - id: ADM-3
+        title: Order list + detail view
+        size: M
+      - id: ADM-4
+        title: Admin route protection (role-gated)
+        size: M
+
+  - id: EPIC-10
+    name: Motion & Micro-interactions
+    stories:
+      - id: MOT-1
+        title: Announcement marquee bar
+        size: S
+      - id: MOT-2
+        title: Category tile + product grid hover/scroll animation
+        size: M
+      - id: MOT-3
+        title: Add-to-cart micro-interaction
+        size: S
+      - id: MOT-4
+        title: Animated stat counters (single-trigger)
+        size: S
+      - id: MOT-5
+        title: Sticky mobile add-to-cart bar on PDP
+        size: S
+      - id: MOT-6
+        title: prefers-reduced-motion fallback across all animations
+        size: M
+
+  - id: EPIC-11
+    name: Policies & Support
+    stories:
+      - id: POL-1
+        title: Return/Exchange, Shipping, Privacy, Terms pages
+        size: S
+      - id: POL-2
+        title: Email + WhatsApp contact
+        size: S
+
+  - id: EPIC-12
+    name: Domain & Deployment
+    stories:
+      - id: DOM-1
+        title: Launch on free *.vercel.app
+        size: S
+      - id: DOM-2
+        title: Attach custom domain post-revenue, no rebuild
+        size: S

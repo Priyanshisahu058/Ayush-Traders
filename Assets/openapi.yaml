@@ -1,0 +1,335 @@
+openapi: 3.0.3
+info:
+  title: AT Ornaments API
+  description: >
+    Route Handler API for the AT Ornaments Next.js e-commerce app.
+    Public endpoints serve the storefront; /admin/* endpoints require an
+    authenticated Supabase session with role=admin.
+  version: "1.0.0"
+servers:
+  - url: https://ayushtraders.vercel.app/api
+    description: Production
+  - url: http://localhost:3000/api
+    description: Local development
+
+tags:
+  - name: products
+  - name: cart
+  - name: checkout
+  - name: payments
+  - name: shipping
+  - name: orders
+  - name: admin
+
+paths:
+  /products:
+    get:
+      tags: [products]
+      summary: List products (filterable by category, price)
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [chain, anklet, ring, bracelet]
+        - in: query
+          name: minPrice
+          schema: { type: number }
+        - in: query
+          name: maxPrice
+          schema: { type: number }
+      responses:
+        "200":
+          description: List of products with resolved price
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    get:
+      tags: [products]
+      summary: Get a single product with images and variants
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+
+  /checkout/create-order:
+    post:
+      tags: [checkout]
+      summary: Recompute cart total server-side, apply free-gift logic, create Razorpay order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "200":
+          description: Razorpay order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateOrderResponse"
+        "400":
+          description: Invalid cart / address
+        "401":
+          description: Not authenticated
+
+  /payments/webhook:
+    post:
+      tags: [payments]
+      summary: Razorpay webhook receiver (payment.captured / payment.failed)
+      description: >
+        Signature is verified via HMAC using the Razorpay webhook secret before
+        any order state change. Idempotent against duplicate deliveries.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Raw Razorpay webhook payload
+      responses:
+        "200":
+          description: Webhook processed
+        "400":
+          description: Invalid signature
+
+  /orders/{id}/invoice:
+    get:
+      tags: [orders]
+      summary: Fetch (or lazily generate) the GST invoice PDF for an order
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Signed URL / PDF stream for the invoice
+        "403":
+          description: Not the order owner and not an admin
+        "404":
+          description: Order not found
+
+  /shipping/track/{awb}:
+    get:
+      tags: [shipping]
+      summary: Proxy Shiprocket tracking for a given AWB code
+      parameters:
+        - in: path
+          name: awb
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Tracking status payload
+
+  /admin/products:
+    post:
+      tags: [admin]
+      summary: Create a product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Product created
+        "403":
+          description: Not an admin
+
+  /admin/silver-rate:
+    post:
+      tags: [admin]
+      summary: Update today's silver rate per gram (cascades to all weight_based prices)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rate_per_gram]
+              properties:
+                rate_per_gram: { type: number }
+      responses:
+        "200":
+          description: Rate updated
+
+  /admin/gift-pool:
+    post:
+      tags: [admin]
+      summary: Add or update a surprise-gift pool entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GiftPoolEntry"
+      responses:
+        "200":
+          description: Gift pool updated
+
+  /admin/gift-threshold:
+    post:
+      tags: [admin]
+      summary: Update the free-gift ₹ threshold
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [threshold]
+              properties:
+                threshold: { type: number, example: 499 }
+      responses:
+        "200":
+          description: Threshold updated
+
+  /admin/gst-settings:
+    post:
+      tags: [admin]
+      summary: Update GSTIN, registered address, and invoice number prefix
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GstSettings"
+      responses:
+        "200":
+          description: Settings updated
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Supabase session token (customer or admin, enforced per-route)
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        category:
+          type: string
+          enum: [chain, anklet, ring, bracelet]
+        pricing_type:
+          type: string
+          enum: [fixed, weight_based]
+        resolved_price:
+          type: number
+          description: Computed server-side (fixed_price, or weight*rate+making_charge)
+        weight_grams: { type: number, nullable: true }
+        making_charge: { type: number, nullable: true }
+        stock: { type: integer }
+        is_active: { type: boolean }
+        is_hallmarked: { type: boolean }
+        huid: { type: string, nullable: true }
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              image_url: { type: string }
+              sort_order: { type: integer }
+        variants:
+          type: array
+          items:
+            type: object
+            properties:
+              variant_label: { type: string }
+              stock: { type: integer }
+
+    ProductInput:
+      type: object
+      required: [name, category, pricing_type]
+      properties:
+        name: { type: string }
+        category:
+          type: string
+          enum: [chain, anklet, ring, bracelet]
+        pricing_type:
+          type: string
+          enum: [fixed, weight_based]
+        fixed_price: { type: number, nullable: true }
+        weight_grams: { type: number, nullable: true }
+        making_charge: { type: number, nullable: true }
+        stock: { type: integer }
+        is_hallmarked: { type: boolean }
+        huid: { type: string, nullable: true }
+
+    CreateOrderRequest:
+      type: object
+      required: [items, shipping_address_id]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id: { type: string }
+              quantity: { type: integer }
+              variant_label: { type: string, nullable: true }
+        shipping_address_id: { type: string }
+
+    CreateOrderResponse:
+      type: object
+      properties:
+        razorpay_order_id: { type: string }
+        amount: { type: number }
+        currency: { type: string, example: INR }
+        order_id: { type: string, description: Internal orders.id }
+        free_gift_name:
+          type: string
+          nullable: true
+          description: Set only if subtotal met the threshold
+
+    GiftPoolEntry:
+      type: object
+      required: [name]
+      properties:
+        id: { type: string, nullable: true }
+        name: { type: string }
+        is_active: { type: boolean }
+
+    GstSettings:
+      type: object
+      properties:
+        business_gstin: { type: string }
+        business_registered_address: { type: string }
+        invoice_number_prefix: { type: string }
