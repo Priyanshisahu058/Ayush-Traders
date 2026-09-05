@@ -12,6 +12,24 @@ export async function GET() {
         const { data: oppData } = await supabase.from("recovery_opportunities").select("*").order("created_at", { ascending: false });
         if (oppData) opportunities = oppData;
 
+        const { data: actData } = await supabase.from("recovery_actions").select("*").order("created_at", { ascending: false });
+        if (actData && actData.length > 0) {
+          const mappedActions = actData.map((act: any) => ({
+            opportunity_id: act.opportunity_id || act.id,
+            type: act.event_type || (act.proposed_action === "offer_discount" ? "cart_abandonment" : "payment_failure"),
+            amount: Number(act.cart_total || 1890),
+            reason: act.diagnosis_text || "Recovery action executed",
+            recommended_action: act.final_action || act.proposed_action || "retry_payment",
+            status: act.outcome || "action_taken",
+            ai_explanation: act.diagnosis_text,
+            revenue_at_risk: Number(act.cart_total || 1890),
+            revenue_recovered: act.outcome === "recovered" ? Number(act.cart_total || 1890) : 0,
+            attempt_count: act.attempt_number || 1,
+            created_at: act.created_at,
+          }));
+          opportunities = [...opportunities, ...mappedActions];
+        }
+
         const { data: evData } = await supabase.from("checkout_events").select("*");
         if (evData) events = evData;
       } catch (e) {
